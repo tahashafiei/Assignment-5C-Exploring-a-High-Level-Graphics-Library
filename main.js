@@ -16,7 +16,7 @@ class Game {
 		this.con = new OrbitControls(this.camera.obj, this.renderer.domElement);
 		this.con.update();
 
-		this.level.loadLevel(() => {
+		this.level.loadStage(() => {
 			this.player.reset(this.level.startPos);
 			console.log("player reset");
 		});
@@ -55,7 +55,7 @@ class Game {
 	playerWin() {
 		this.player.win(() => {
 			this.level.remove(() => {
-				this.level.loadLevel(() => {
+				this.level.loadStage(() => {
 					this.controls.reset();
 					this.player.reset(this.level.startPos);
 				});

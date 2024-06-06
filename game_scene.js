@@ -28,8 +28,23 @@ class GameScene {
 		renderer.shadowMap.enabled = true;
 		//renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-		document.body.appendChild(renderer.domElement);
+		document.querySelector('#container').appendChild(renderer.domElement);
 		
+		// var skyboxImage = [
+		// 	'./resources/pos-x.png', 
+		// 	'./resources/neg-x.png',
+		// 	'./resources/pos-y.png',
+		// 	'./resources/neg-y.png',
+		// 	'./resources/pos-z.png',
+		// 	'./resources/neg-z.png',
+		// ]
+		// var materialArray = this.createMaterialArray(skyboxImage);
+		// var skyboxGeo = new THREE.BoxGeometry(5000, 5000, 5000);
+		// var skybox = new THREE.Mesh( skyboxGeo, materialArray );
+		// skybox.position.set(8, 6, 6);
+		// scene.add( skybox );
+
+
 		const ambiantLight = new THREE.AmbientLight(0xffffff, 0.6);
 		scene.add(ambiantLight);
 		
@@ -52,6 +67,15 @@ class GameScene {
 		}, false);
 
 		return [ scene, renderer ];
+	}
+
+	createMaterialArray(filenames) {
+		const materialArray = filenames.map(image=> {
+			let texture = new THREE.TextureLoader().load(image);
+
+			return new THREE.MeshBasicMaterial( { map: texture, side: THREE.DoubleSide } );
+		});
+		return materialArray;
 	}
 }
 

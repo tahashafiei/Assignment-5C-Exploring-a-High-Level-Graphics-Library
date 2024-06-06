@@ -30,7 +30,7 @@ class Controls {
             case 'KeyD': // d
                 this.right = true; console.log('Right ' + this.up); break;
             // case 32: // space
-                // reset camera position
+                // reset camera position                
         }
     }
 
@@ -52,7 +52,7 @@ class Player {
         this.scene = scene;
         this.rect = new THREE.Mesh(
             new THREE.BoxGeometry(1, 2, 1),
-            new THREE.MeshLambertMaterial( {color: 0xFFFFFF} ) 
+            new THREE.MeshLambertMaterial( {color: 0x222222} ) 
         );
 
         this.rect.position.set(0, 0, 0);
@@ -156,9 +156,9 @@ class Player {
         if (this.position === "|") {
             delta = {x: 0, y: -1, z: -0.5};
         } else if (this.position === "_") {
-            delta = {x: 0, y: -0.5, z: -1};
-        } else if (this.position === ".") {
             delta = {x: 0, y: -0.5, z: -0.5};
+        } else if (this.position === ".") {
+            delta = {x: 0, y: -0.5, z: -1};
         }
 
         this.setPivot(delta);
@@ -177,9 +177,9 @@ class Player {
         if (this.position === "|") {
             delta = {x: 0, y: -1, z: 0.5};
         } else if (this.position === "_") {
-            delta = {x: 0, y: -0.5, z: 1};
-        } else if (this.position === ".") {
             delta = {x: 0, y: -0.5, z: 0.5};
+        } else if (this.position === ".") {
+            delta = {x: 0, y: -0.5, z: 1};
         }
 
         this.setPivot(delta);
@@ -265,6 +265,7 @@ class Player {
     }
 
     win(callback) {
+        // console.log("player.win");
         this.canMove = false;
         anime ({
             targets: [this.pivot.rotation],
@@ -272,15 +273,14 @@ class Player {
             duration: 600,
             easing: 'easeInOutQuad',
             loop: 3,
-            complete: () => callback()
         });
         anime({
-           targets: [this.rect.scale],
-           x: 0, y: 0, z: 0,
-           duration: 300,
-           easing: 'easeInOutQuad',
-           complete: () => callback() 
-        });
+            targets: [this.rect.scale],
+            x: 0, y: 0, z: 0,
+            duration: 300,
+            easing: 'easeInOutQuad',
+            complete: () => callback() 
+         }); 
     }
 
     fall(callback) {

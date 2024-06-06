@@ -3,51 +3,112 @@ import anime from './anime-master/lib/anime.es.js';
 import {OBJLoader} from './three.js-master/examples/jsm/loaders/OBJLoader.js';
 import {MTLLoader} from './three.js-master/examples/jsm/loaders/MTLLoader.js';
 
-const placed = false;
-
 const level_map = [
-	'xxx@xxx',
-	'xxxxxxx',
-	'xxxxxxx',
-	'xxxxxxx',
-	'xxxxxxx',
-	'xxxoxxx',
-	'xxxxxxx',
+	'@xxxxxxx',
+	'......x.',
+	'......x.',
+	'...o..x.',
+	'...x..x.',
+	'...x..x.',
+	'...xxxx.',
+]
+
+const stage_one = [
+	'xxx........',
+	'x@xxxx.....',
+	'xxxxxxxxx..',
+	'.xxxxxxxxx.',
+	'.....xxoxx.',
+	'......xxx..',
+]
+
+const stage_two = [
+	'......xxxxxxx..',
+	'xxxx..xxx..xx..',
+	'xxxxxxxxx..xxxx',
+	'x@xx.......xxox',
+	'xxxx.......xxxx',
+	'............xxx',
+]
+
+const stage_three = [
+	'.....xxxxxx....',
+	'.....x..xxx....',
+	'.....x..xxxxx..',
+	'@xxxxx.....xxxx',
+	'....xxx....xxox',
+	'....xxx.....xxx',
+	'......x..xx....',
+	'......xxxxx....',
+	'......xxxxx....',
+	'.......xxx.....',
 ]
 
 class Level {
 	constructor(scene) {
 		this.scene = scene;
 		this.geo = new THREE.BoxGeometry(1, 0.25, 1);
-		this.matX = new THREE.MeshLambertMaterial({ color: 0x444444 });
-		this.matO = new THREE.MeshLambertMaterial({ color: 0xFFFFFF });
-		this.matZ = new THREE.MeshLambertMaterial({ color: 0xe74c3c });
+		this.matX = new THREE.MeshLambertMaterial({ color: 0xffffff });
+		this.matO = new THREE.MeshLambertMaterial({ color: 0x00ffff });
+
+		this.stages = [level_map, stage_one, stage_two, stage_three]
+		this.level = level_map;
+		this.selection = 0;
+		this.placed = false;
+
+		this.obj = new OBJLoader();
+		this.mtl = new MTLLoader();
+		this.crown = undefined;
+		this.spotLight = undefined;
 
 		this.layer = new THREE.Group();
 		this.scene.add(this.layer);
 	}
 
 	remove(callback) {
+		console.log("level.remove");
 		this.layer.children.map(e => {
 			anime({
 				targets: [e.scale],
 				x: 0, y: 0, z: 0,
 				duration: 300,
 				easing: "easeInOutQuad",
+				complete: () => {
+					this.layer.remove(...this.layer.children);
+					this.layer.scale.set(1, 1, 1);
+					// callback();
+				}	
 			});
 		});
+
 		anime({
+			targets: [this.crown.scale],
+			x: 0, y: 0, z: 0,
 			duration: 500,
+			easing: "easeInOutQuad",
 			complete: () => {
-				this.layer.remove(...this.layer.children);
-				this.layer.scale.set(1, 1, 1);
+				this.layer.remove(this.crown);
+				this.crown = undefined;
+				this.placed = false;
+				this.layer.remove(this.spotLight);
+				this.spotLight = undefined;
 				callback();
 			}
+		})
+	}
+
+	loadStage(callback) {
+		console.log("stage loaded");
+		this.level = this.stages[this.selection];
+		this.loadLevel();
+		anime({
+			duration: 500,
+			complete: () => callback()
 		});
 	}
 
-	loadLevel(callback) {
-		const level = level_map;
+	loadLevel() {
+		const level = this.level;
 		const offsetX = -level[0].length/2 +0.5;
 		const offsetZ =  -level.length/2 +0.5;
 		this.layer.position.set(offsetX, 0, offsetZ);
@@ -61,14 +122,10 @@ class Level {
 					this.createTile(this.matX, x, z);
 				} else if (level[z][x] == "o") {
 					this.createTile(this.matO, x, z);
-					this.placeCrown(x, z);
-				} else if (level[z][x] == "z") {
-					this.createTile(this.matZ, x, z);
-				}
+					this.placeCrown(x + offsetX, z + offsetZ);
+				} 
 			}
 		}
-
-		callback();
 	}
 
 
@@ -88,60 +145,74 @@ class Level {
 	}
 
 	placeCrown(x, z) {
-		this.placed = true;
-		const obj = new OBJLoader();
-		const mtl = new MTLLoader();
-		mtl.load('./resources/golden_crown/13451_Golden_Crown_v1_L2.mtl', (mtl) => {
-			mtl.preload();
-			for (const material of Object.values(mtl.materials)) {
-				material.side = THREE.DoubleSide;
-			}
-			obj.setMaterials(mtl);
-			obj.load('./resources/golden_crown/13451_Golden_Crown_v1_L2.obj', (root) => {
-				root.scale.set(0.05, 0.05, 0.05);
-				root.rotation.set(-Math.PI / 2, 0, 0);
-				root.position.set(x - 3, 0.125, z - 3);
-				this.scene.add(root);
+		if (!this.placed) {
+			this.placed = true;
+			this.mtl.load('./resources/golden_crown/13451_Golden_Crown_v1_L2.mtl', (mtl) => {
+				mtl.preload();
+				for (const material of Object.values(mtl.materials)) {
+					material.side = THREE.DoubleSide;
+				}
+				this.obj.setMaterials(mtl);
+				this.obj.load('./resources/golden_crown/13451_Golden_Crown_v1_L2.obj', (root) => {
+					this.crown = root;
+					root.scale.set(0.05, 0.05, 0.05);
+					root.rotation.set(-Math.PI / 2, 0, 0);
+					root.position.set(x, 0.125, z);
+					this.scene.add(root);
+					anime({
+						targets: [this.crown.scale],
+						x: 0.05, y: 0.05, z: 0.05,
+						delay: (x+z)*30,
+						duration: 300,
+						easing: 'easeInOutQuad',
+					})
+				});
 			});
-		});
+		}
+		this.placeSpotlight(x, z);
+	}
 
-		// anime({
-		// 	targets: [obj.rotate],
-		// 	z: Math.PI / 2,
-		// 	duration: 300,
-		// 	easing: 'easeInQuad',
-		// 	loop: true
-		// });
+	placeSpotlight(x, z) {
+		if (!this.spotLight) {
+			console.log("spotlight created");
+			this.spotLight = new THREE.SpotLight(0xffffff);
+			this.spotLight.position.set(x, 10, z);
+			this.spotLight.castShadow = true;
+			this.spotLight.angle = 0.5;
+			this.spotLight.penumbra = 0.2;
+			this.spotLight.decay = 2;
+			this.spotLight.intensity = 100
+			this.scene.add(this.spotLight);
+		}
 	}
 
 	isDeath({ x1, z1, x2, z2 }) {
 		if (x2 !== undefined) {
-			const isRed = this.get(x1, z1) === "z" || this.get(x2, z2) === "z";
 			const isEmpty = this.get(x1, z1) === "." && this.get(x2, z2) === ".";
-			return isRed || isEmpty;
+			return isEmpty;
 		} 
-		return this.get(x1, z1) === "z" || this.get(x1, z1) === ".";
+		return this.get(x1, z1) === ".";
 	}
 
 	isWin({ x1, z1, x2, z2 }) {
-		if (x2 !== undefined) {
-			return this.get(x1, z1) === "o" && this.get(x2, z2) === "o";
+		if (x2 == undefined) {
+			return this.get(x1, z1) === "o";
 		} 
 
 		return false;
 	}
 
 	get(x, z) {
-		const offsetX = level_map[0].length/2 - 0.5;
-		const offsetZ =  level_map.length/2 - 0.5;
+		const offsetX = this.stages[this.selection][0].length/2 - 0.5;
+		const offsetZ =  this.stages[this.selection].length/2 - 0.5;
 		x = Math.round(x + offsetX);
 		z = Math.round(z + offsetZ);
 
-		if (x < 0 || x >= level_map.length || z < 0 || z >= level_map.length) {
+		if (x < 0 || x >= this.stages[this.selection].length || z < 0 || z >= this.stages[this.selection].length) {
 			return '.';
 		}
 		// console.log(offsetZ, z);
-		return level_map[z][x];
+		return this.stages[this.selection][z][x];
 	}
 }
 
